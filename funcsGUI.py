@@ -22,7 +22,7 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
         connect = self.connect_to_database()
         with connect:
             with connect.cursor() as crs:
-                self.update_fields(crs)
+                self.update_fields(crs)  # all refresh
 
         # bind buttons
         self.b_cur_time_arr.clicked.connect(self.set_cur_arr_time)
@@ -47,7 +47,6 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
         fields['departure_time'] = self.te_time_dep.time().toString("hh-mm")
         fields['dinner'] = self.chb_dinner.isChecked()
         fields['remotely'] = self.chb_remotely.isChecked()
-        fields['additional_parameters'] = self.gb_additional_param.isChecked()
         fields['time_absense_begin'] = self.te_time_absense_start.time().toString("hh-mm")
         fields['time_absense_end'] = self.te_time_absense_stop.time().toString("hh-mm")
         fields['comment'] = self.te_comment.toPlainText()
@@ -57,7 +56,7 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
         with connect:
             with connect.cursor() as crs:
                 self.save_to_database(crs, fields)
-                self.update_fields(crs, upd_init_f=False, upd_input_f=False)
+                self.update_fields(crs, upd_init_f=False, upd_input_f=False, upd_output_f=True)
 
     # Set default value for all input fields
     def clear_fields(self):
@@ -76,7 +75,7 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
         connect = self.connect_to_database()
         with connect:
             with connect.cursor() as crs:
-                self.update_fields(crs, upd_init_f=False)
+                self.update_fields(crs, upd_init_f=False, upd_input_f=True, upd_output_f=True)
 
     # Set data in fields GUI from database
     def update_fields(self, cursor, upd_init_f=True, upd_input_f=True, upd_output_f=True):
@@ -89,7 +88,6 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
                 date = self.cal_calendar.selectedDate().toString("yyyy-MM-dd")
                 print(date)
                 input_data = GetValuesFromDatabase.get_input_data(cursor, date)
-
                 # if exist record with the date
                 if input_data:
                     if input_data['arrival_time']:
@@ -100,11 +98,18 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
                         self.chb_dinner.setChecked(input_data['dinner'])
                     if input_data['remotely']:
                         self.chb_dinner.setChecked(input_data['remotely'])
+                    if input_data['time_absence_begin']:
+                        self.te_time_absense_start.setTime(str_to_time(input_data['time_absence_begin']))
+                    if input_data['time_absence_end']:
+                        self.te_time_absense_stop.setTime(str_to_time(input_data['time_absence_end']))
+                    if input_data['comment']:
+                        self.te_comment.setText(input_data['comment'])
+                    if input_data['reason']:
+                        index = self.cb_reason.findText(input_data['reason'])
+                        if index == -1:  # if this reason not exist, set reason '' (index=0)
+                            index = 0
+                        self.cb_reason.setItemData(index)
 
-                    if input_data['additional_parameters']:
-                        # if exist record with additional params of the date
-                        # TODO
-                        pass
                 else:
                     self.clear_fields()
 
@@ -116,8 +121,25 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
 
     # Save data to database
     def save_to_database(self, cursor, data_dict):
-        # TODO
-        pass
+        # TODO Сделать сохранение данных в БД (мб вынести/статик)
+        return
+        cursor.execute("""SELECT tracked_date FROM TimeLog WHERE username = SUSER_SNAME()""")
+        if cursor.rowcount == 0:  # then INSERT
+            cursor.execute("""INSERT INTO""")
+        else:  # then UPDATE
+            tracked_date = cursor.fetchone()
+
+        """
+        data_dict['tracked_date']
+        data_dict['arrival_time']
+        data_dict['departure_time']
+        data_dict['dinner']
+        data_dict['remotely']
+        data_dict['time_absense_begin'] 
+        data_dict['time_absense_end'] 
+        data_dict['comment'] 
+        data_dict['non_appearance_reason'] 
+        """
 
     def connect_to_database(self):
         try:
@@ -135,7 +157,7 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
         func = inspect.stack()[1][3]  # name of func, in which an error occurred
         prev_func = inspect.stack()[2][3]  # name of func, which called the function, in which an error occurred
         title = "Ошибка"
-        msg = "Функция: {} \nРодительская функция{} \nОшибка: {} : {} \n{}"\
+        msg = "Функция: {} \nРодительская функция: {} \nОшибка: {} : {} \n{}"\
             .format(func, prev_func, type(err).__name__, err, additional_text)
         QtWidgets.QMessageBox.critical(parent, title, msg)
         exit(-1)
@@ -169,50 +191,40 @@ class GetValuesFromDatabase:
     @staticmethod
     def get_input_data(cursor, date):
         date = "\'{}\'".format(date)
-        cursor.execute("""SELECT 
-                            tl.arrival_time, 
-                            tl.departure_time, 
-                            tl.dinner, 
-                            tl.remotely,
-                            tl.id_additional_parameters
+        keys = ['arrival_time', 'departure_time', 'dinner', 'remotely',
+                'time_absence_begin', 'time_absence_end', 'comment', 'id_non_appearance_reason']
+        select_string = ", ".join(keys)
+        cursor.execute("""SELECT {select_str}
                         FROM 
                             TimeLog AS tl
                         WHERE 
                             tl.username = SUSER_SNAME() 
                             AND tl.tracked_date = {cur_date}
-                        """.format(cur_date=date))
+                        """.format(select_str=select_string, cur_date=date))
+
         input_data = dict()
 
         # if not exist record with the date
         if cursor.rowcount == 0:
             return input_data
 
-        keys = ['arrival_time', 'departure_time', 'dinner', 'remotely', 'additional_parameters']
         row = list(cursor.fetchone())
         for value, key in zip(row, keys):
             input_data[key] = value
+        input_data['reason'] = None
 
-        # if additional_parameters IS NONE
-        if not input_data['additional_parameters']:
+        # if not exist reason (on field: TimeLog.id_non_appearance_reason)
+        if not input_data['id_non_appearance_reason']:
             return input_data
+        else:
+            cursor.execute("""SELECT name FROM NonAppearanceReasons WHERE id_non_appearance_reason = {id_reason}
+                                        """.format(id_reason=input_data['id_non_appearance_reason']))
 
-        # if additional_parameters IS NOT NONE
-        keys_add = ['time_absence_begin', 'time_absence_end', 'comment', 'reason']
-        cursor.execute("""SELECT
-                            ap.id_additional_parameters,
-                            ap.time_absence_begin,
-                            ap.time_absence_end,
-                            ap.comment,
-                            nar.name
-                        FROM
-                            AdditionalParameters AS ap
-                        INNER JOIN NonAppearanceReasons AS nar
-                                  ON nar.id_non_appearance_reason = ap.id_non_appearance_reason
-                        WHERE ap.id_additional_parameters = {ref_add_params}
-                        """.format(ref_add_params=input_data['additional_parameters']))
-        row = list(cursor.fetchone())
-        for value, key in zip(row, keys_add):
-            input_data[key] = value
+        # if not exist reason (on field: NonAppearanceReasons.name)
+        if cursor.rowcount == 0:
+            return input_data
+        else:
+            input_data['reason'] = str(cursor.fetchone())
 
         return input_data
 
