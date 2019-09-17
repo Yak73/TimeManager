@@ -1,8 +1,10 @@
 from PyQt5 import QtWidgets, QtGui
 import design
 import pyodbc
-from datetime import datetime, time
+from datetime import time
 import inspect
+import general_functions as gen_funcs
+import get_date_from_database as from_DB
 
 
 SERVER = 'LIT-SQLSRV-01\LESTER14'
@@ -33,11 +35,11 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
 
     # Set current time as arrival time
     def set_cur_arr_time(self):
-        self.te_time_arr.setTime(GetValuesFromDatabase.get_cur_time())
+        self.te_time_arr.setTime(gen_funcs.get_cur_time())
 
     # Set current time as departure time
     def set_cur_dep_time(self):
-        self.te_time_dep.setTime(GetValuesFromDatabase.get_cur_time())
+        self.te_time_dep.setTime(gen_funcs.get_cur_time())
 
     # Save data from input widgets to database and update statistics
     def save_changes(self):
@@ -69,6 +71,7 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
         self.chb_dinner.setChecked(True)
         self.chb_remotely.setChecked(False)
         self.gb_additional_param.setChecked(False)
+        self.cb_reason.setCurrentText("")
 
     # Update data in fields, when date was changed
     def change_output_by_date(self):
@@ -81,27 +84,27 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
     def update_fields(self, cursor, upd_init_f=True, upd_input_f=True, upd_output_f=True):
         try:
             if upd_init_f:
-                self.tb_user.setText(GetValuesFromDatabase.get_cur_user(cursor, slice_flag=True))
-                self.cb_reason.addItems(GetValuesFromDatabase.get_reasons(cursor))
+                self.tb_user.setText(from_DB.get_cur_user(cursor, slice_flag=True))
+                self.cb_reason.addItems(from_DB.get_reasons(cursor))
 
             if upd_input_f:
-                date = self.cal_calendar.selectedDate().toString("yyyy-MM-dd")
-                print(date)
-                input_data = GetValuesFromDatabase.get_input_data(cursor, date)
+                selected_date = self.cal_calendar.selectedDate().toString("yyyy-MM-dd")
+                print(selected_date)
+                input_data = from_DB.get_input_data(cursor, selected_date)
                 # if exist record with the date
                 if input_data:
                     if input_data['arrival_time']:
-                        self.te_time_arr.setTime(str_to_time(input_data['arrival_time']))
+                        self.te_time_arr.setTime(gen_funcs.str_to_time(input_data['arrival_time']))
                     if input_data['departure_time']:
-                        self.te_time_dep.setTime(str_to_time(input_data['departure_time']))
+                        self.te_time_dep.setTime(gen_funcs.str_to_time(input_data['departure_time']))
                     if input_data['dinner']:
                         self.chb_dinner.setChecked(input_data['dinner'])
                     if input_data['remotely']:
                         self.chb_dinner.setChecked(input_data['remotely'])
                     if input_data['time_absence_begin']:
-                        self.te_time_absense_start.setTime(str_to_time(input_data['time_absence_begin']))
+                        self.te_time_absense_start.setTime(gen_funcs.str_to_time(input_data['time_absence_begin']))
                     if input_data['time_absence_end']:
-                        self.te_time_absense_stop.setTime(str_to_time(input_data['time_absence_end']))
+                        self.te_time_absense_stop.setTime(gen_funcs.str_to_time(input_data['time_absence_end']))
                     if input_data['comment']:
                         self.te_comment.setText(input_data['comment'])
                     if input_data['reason']:
@@ -162,76 +165,6 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
         QtWidgets.QMessageBox.critical(parent, title, msg)
         exit(-1)
 
-
-class GetValuesFromDatabase:
-    # 'Static' class for union methods, which read the data from database
-
-    # Get name of current user
-    @staticmethod
-    def get_cur_user(cursor, slice_flag=False):
-        cursor.execute('SELECT suser_sname()')
-        name = str(cursor.fetchone())
-        if 'LESTER' in name and slice_flag:
-            name = name[10:-4]
-        return name
-
-    # Get all kinds of NonAppearanceReasons from database
-    @staticmethod
-    def get_reasons(cursor):
-        cursor.execute('SELECT name FROM NonAppearanceReasons')
-        reasons = [str(row)[2:-4] for row in cursor.fetchall()]
-        reasons.insert(0, '')
-        return reasons
-
-    # Get current time
-    @staticmethod
-    def get_cur_time():
-        return datetime.now().time()
-
-    @staticmethod
-    def get_input_data(cursor, date):
-        date = "\'{}\'".format(date)
-        keys = ['arrival_time', 'departure_time', 'dinner', 'remotely',
-                'time_absence_begin', 'time_absence_end', 'comment', 'id_non_appearance_reason']
-        select_string = ", ".join(keys)
-        cursor.execute("""SELECT {select_str}
-                        FROM 
-                            TimeLog AS tl
-                        WHERE 
-                            tl.username = SUSER_SNAME() 
-                            AND tl.tracked_date = {cur_date}
-                        """.format(select_str=select_string, cur_date=date))
-
-        input_data = dict()
-
-        # if not exist record with the date
-        if cursor.rowcount == 0:
-            return input_data
-
-        row = list(cursor.fetchone())
-        for value, key in zip(row, keys):
-            input_data[key] = value
-        input_data['reason'] = None
-
-        # if not exist reason (on field: TimeLog.id_non_appearance_reason)
-        if not input_data['id_non_appearance_reason']:
-            return input_data
-        else:
-            cursor.execute("""SELECT name FROM NonAppearanceReasons WHERE id_non_appearance_reason = {id_reason}
-                                        """.format(id_reason=input_data['id_non_appearance_reason']))
-
-        # if not exist reason (on field: NonAppearanceReasons.name)
-        if cursor.rowcount == 0:
-            return input_data
-        else:
-            input_data['reason'] = str(cursor.fetchone())
-
-        return input_data
-
-
-def str_to_time(strtime):
-    temp_time = [int(i) for i in strtime.split(':')]
-    return time(*temp_time)
 
 # TODO: Добавить расчет статистики
 
