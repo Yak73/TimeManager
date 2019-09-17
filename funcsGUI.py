@@ -4,7 +4,7 @@ import pyodbc
 from datetime import time
 import inspect
 import general_functions as gen_funcs
-import get_date_from_database as from_DB
+import get_data_from_database as from_DB
 
 
 SERVER = 'LIT-SQLSRV-01\LESTER14'
@@ -124,25 +124,66 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
 
     # Save data to database
     def save_to_database(self, cursor, data_dict):
-        # TODO Сделать сохранение данных в БД (мб вынести/статик)
-        return
-        cursor.execute("""SELECT tracked_date FROM TimeLog WHERE username = SUSER_SNAME()""")
-        if cursor.rowcount == 0:  # then INSERT
-            cursor.execute("""INSERT INTO""")
-        else:  # then UPDATE
-            tracked_date = cursor.fetchone()
+        #for key in ['arrival_time', 'departure_time', 'time_absense_begin', 'time_absense_end']:
+        #    if data_dict[key] == '00-00':
+        #        data_dict[key] = None
+        try:
+            # TODO Сделать сохранение данных в БД (мб вынести/статик)
+            print(data_dict['tracked_date'])
+            cursor.execute("""SELECT tracked_date FROM TimeLog 
+                            WHERE username = SUSER_SNAME() AND tracked_date = '{sel_date}'
+                            """.format(sel_date=data_dict['tracked_date']))
+            print('i`m here')
+            if cursor.rowcount == 0:  # then INSERT
+                cursor.execute("""INSERT INTO TimeLog
+                                (
+                                    tracked_date,
+                                    arrival_time,
+                                    departure_time,
+                                    dinner,
+                                    remotely,
+                                    time_absence_begin,
+                                    time_absence_end,
+                                    comment,
+                                    id_non_appearance_reason
+                                )
+                                VALUES
+                                (
+                                    '{t_date}',
+                                    {a_time}',
+                                    {d_time},
+                                    {din},
+                                    {rem},
+                                    {time_a_b},
+                                    {time_a_e},
+                                    {com},
+                                    (SELECT TOP 1 id FROM NonAppearanceReasons WHERE name LIKE '%{reason}%')
+                                )""".format(
+                    t_date=data_dict['tracked_date'],
+                    a_time=gen_funcs.str_to_time(data_dict['arrival_time']),
+                    d_time=gen_funcs.str_to_time(data_dict['departure_time']),
+                    din=data_dict['dinner'], rem=data_dict['remotely'],
+                    time_a_b=gen_funcs.str_to_time(data_dict['time_absense_begin']),
+                    time_a_e=gen_funcs.str_to_time(data_dict['time_absense_end']),
+                    com=data_dict['comment'], reason=data_dict['non_appearance_reason']
+                ))
+            else:  # then UPDATE
+                tracked_date = cursor.fetchone()
+                cursor.execute("""UPDATE INTO""")
 
-        """
-        data_dict['tracked_date']
-        data_dict['arrival_time']
-        data_dict['departure_time']
-        data_dict['dinner']
-        data_dict['remotely']
-        data_dict['time_absense_begin'] 
-        data_dict['time_absense_end'] 
-        data_dict['comment'] 
-        data_dict['non_appearance_reason'] 
-        """
+            """
+            data_dict['tracked_date']
+            data_dict['arrival_time']
+            data_dict['departure_time']
+            data_dict['dinner']
+            data_dict['remotely']
+            data_dict['time_absense_begin'] 
+            data_dict['time_absense_end'] 
+            data_dict['comment'] 
+            data_dict['non_appearance_reason'] 
+            """
+        except Exception as e:
+            self.show_error(err=e)
 
     def connect_to_database(self):
         try:
