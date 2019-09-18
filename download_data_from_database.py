@@ -15,6 +15,27 @@ def get_reasons(cursor):
     return reasons
 
 
+# Get the name of reason on id_reason
+def get_name_reason(cursor, id_reason):
+    cursor.execute('SELECT name FROM NonAppearanceReasons WHERE id_non_appearance_reason = {id_r}'.format(
+        id_r=id_reason))
+    if cursor.rowcount == 0:
+        return None
+    name = str(cursor.fetchone())
+    return name
+
+
+# Get the id of reason on name_reason
+def get_id_reason(cursor, name_reason):
+    cursor.execute("""SELECT TOP 1 id_non_appearance_reason FROM NonAppearanceReasons WHERE name LIKE '%{name_r}%'
+                    """.format(name_r=name_reason))
+    if cursor.rowcount == 0:
+        return None
+    id_reason = str(cursor.fetchone())
+    id_reason = id_reason[1]  # '(1, )' -> '1'
+    return id_reason
+
+
 def get_input_data(cursor, date):
     date = "\'{}\'".format(date)
     keys = ['arrival_time', 'departure_time', 'dinner', 'remotely',
@@ -43,13 +64,12 @@ def get_input_data(cursor, date):
     if not input_data['id_non_appearance_reason']:
         return input_data
     else:
-        cursor.execute("""SELECT name FROM NonAppearanceReasons WHERE id_non_appearance_reason = {id_reason}
-                                    """.format(id_reason=input_data['id_non_appearance_reason']))
+        name_reason = get_name_reason(cursor, input_data['id_non_appearance_reason'])
 
     # if not exist reason (on field: NonAppearanceReasons.name)
-    if cursor.rowcount == 0:
+    if not name_reason:
         return input_data
     else:
-        input_data['reason'] = str(cursor.fetchone())
+        input_data['reason'] = name_reason
 
     return input_data
