@@ -73,3 +73,4 @@ def get_input_data(cursor, date):
         input_data['reason'] = name_reason
 
     return input_data
+

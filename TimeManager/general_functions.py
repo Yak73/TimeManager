@@ -11,7 +11,7 @@ def show_error(err, additional_text='', parent=None):
     msg = "Функция: {} \nРодительская функция: {} \nОшибка: {} : {} \n{}" \
         .format(func, prev_func, type(err).__name__, err, additional_text)
     QtWidgets.QMessageBox.critical(parent, title, msg)
-    exit(-1)
+    exit(-1)  # TODO: убрать при релизе
 
 
 # Convert str to time
@@ -33,3 +33,18 @@ def get_cur_time():
 # Add ' '
 def add_q(string):
     return '\'' + string + '\''
+
+
+# Return difference time: end - start. If dinner return value--
+def diff_times(start, end, dinner=False):
+    if start > end:
+        end, start = start, end
+    diff_h = end.hour - start.hour
+    diff_m = end.minute - start.minute
+    if diff_m < 0:
+        diff_h -= 1
+        diff_m = 60 + diff_m
+    if dinner:
+        diff_h -= 1
+    diff_time = time(hour=diff_h, minute=diff_m)
+    return diff_time

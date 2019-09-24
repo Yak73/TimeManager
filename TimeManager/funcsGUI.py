@@ -6,7 +6,7 @@ from TimeManager import design
 from TimeManager import general_functions as gen_funcs
 from TimeManager import download_data_from_database as from_db
 from TimeManager import upload_data_to_database as to_db
-
+from TimeManager import statistics as stat
 
 SERVER = r'LIT-SQLSRV-01\LESTER14'
 DATABASE = 'Tracker'
@@ -140,8 +140,9 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
 
     # Update values in "output_fields" - right part of GUI
     def update_output_fields(self, cursor):
-        # TODO статистика
-        pass
+        selected_date = self.cal_calendar.selectedDate().toString("yyyy-MM-dd")
+        time_presence = stat.get_time_presence(cursor, selected_date)
+        self.tb_time_presence.setText(str(time_presence))
 
     # Creating a database connection
     @staticmethod
