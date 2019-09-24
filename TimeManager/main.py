@@ -8,3 +8,4 @@ if __name__ == '__main__':
     window = funcsGUI.TimeManagerApp()
     window.show()
     app.exec_()
+

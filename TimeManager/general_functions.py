@@ -1,6 +1,23 @@
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from PyQt5 import QtWidgets
 import inspect
+import pyodbc
+import calendar
+
+SERVER = r'LIT-SQLSRV-01\LESTER14'
+DATABASE = 'Tracker'
+
+
+# Creating a database connection
+def connect_to_database():
+    try:
+        connect = pyodbc.connect("Driver={SQL Server};"
+                                 "Server=" + SERVER + ";"
+                                                      "Database=" + DATABASE + ";"
+                                                                               "Trusted_Connection=yes;")
+        return connect
+    except Exception as e:
+        show_error(err=e)
 
 
 # Error output mechanism
@@ -48,3 +65,37 @@ def diff_times(start, end, dinner=False):
         diff_h -= 1
     diff_time = time(hour=diff_h, minute=diff_m)
     return diff_time
+
+
+def day_name_by_date(date_):
+    # date_ = 2019-09-24
+    work_date = datetime.strptime(date_, "%Y-%m-%d")
+    days_dict = {
+        'Mon': 'Понедельник',
+        'Tue': 'Вторник',
+        'Wed': 'Среда',
+        'Thu': 'Четверг',
+        'Fri': 'Пятница',
+        'Sat': 'Суббота',
+        'Sun': 'Воскресенье'
+    }
+    number_day = work_date.date().weekday() + 1
+    name_day = days_dict[calendar.day_abbr[work_date.date().weekday()]]
+    return number_day, name_day
+
+
+def boundaries_work_week(date_):
+    number_day, _ = day_name_by_date(date_)
+    work_date = datetime.strptime(date_, "%Y-%m-%d")
+    start_week = work_date + timedelta(days=(1 - number_day))
+    end_week = work_date + timedelta(days=(5 - number_day))
+    return start_week, end_week
+
+
+def boundaries_work_month(date_):
+    work_date = datetime.strptime(date_, "%Y-%m-%d")
+    number_day = work_date.day
+    max_days_in_month = calendar.monthrange(work_date.year, work_date.month)[1]
+    start_month = work_date + timedelta(days=(1 - number_day))
+    end_month = work_date + timedelta(days=(max_days_in_month - number_day))
+    return start_month, end_month

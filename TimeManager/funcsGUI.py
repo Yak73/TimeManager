@@ -1,5 +1,4 @@
 from PyQt5 import QtWidgets, QtGui
-import pyodbc
 from datetime import time
 
 from TimeManager import design
@@ -7,9 +6,6 @@ from TimeManager import general_functions as gen_funcs
 from TimeManager import download_data_from_database as from_db
 from TimeManager import upload_data_to_database as to_db
 from TimeManager import statistics as stat
-
-SERVER = r'LIT-SQLSRV-01\LESTER14'
-DATABASE = 'Tracker'
 
 
 class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
@@ -22,7 +18,7 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
 
     def set_init_state(self):
         # Read data from database
-        connect = self.connect_to_database()
+        connect = gen_funcs.connect_to_database()
         with connect:
             with connect.cursor() as crs:
                 self.update_fields(crs)  # all refresh
@@ -44,6 +40,7 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
 
     # Save data from input widgets to database and update statistics
     def save_changes(self):
+        # TODO: добавить проверку сохраняемых данных (защита от дурака)
         fields = dict()
         fields['tracked_date'] = self.cal_calendar.selectedDate().toString("yyyy-MM-dd")
         fields['arrival_time'] = self.te_time_arr.time().toString("hh-mm")
@@ -55,7 +52,7 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
         fields['comment'] = self.te_comment.toPlainText()
         fields['non_appearance_reason'] = self.cb_reason.currentText()
 
-        connect = self.connect_to_database()
+        connect = gen_funcs.connect_to_database()
         with connect:
             with connect.cursor() as crs:
                 to_db.save_to_database(crs, fields)
@@ -77,7 +74,7 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
 
     # Update data in fields, when date was changed
     def change_output_by_date(self):
-        connect = self.connect_to_database()
+        connect = gen_funcs.connect_to_database()
         with connect:
             with connect.cursor() as crs:
                 self.update_fields(crs, upd_init_f=False, upd_input_f=True, upd_output_f=True)
@@ -105,7 +102,8 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
         input_data = None
         try:
             selected_date = self.cal_calendar.selectedDate().toString("yyyy-MM-dd")
-            # print(selected_date)
+            print(selected_date)
+            print(gen_funcs.boundaries_work_month(selected_date))
             input_data = from_db.get_input_data(cursor, selected_date)
         except Exception as e:
             gen_funcs.show_error(e)
@@ -152,16 +150,6 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
         else:
             self.tb_difference.setStyleSheet("background-color: red; font-size: 12pt;")
 
-    # Creating a database connection
-    @staticmethod
-    def connect_to_database():
-        try:
-            connect = pyodbc.connect("Driver={SQL Server};"
-                                     "Server=" + SERVER + ";"
-                                     "Database=" + DATABASE + ";"
-                                     "Trusted_Connection=yes;")
-            return connect
-        except Exception as e:
-            gen_funcs.show_error(err=e)
+
 
 
