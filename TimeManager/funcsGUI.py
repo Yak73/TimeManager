@@ -115,10 +115,10 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
                 self.te_time_arr.setTime(gen_funcs.str_to_time(input_data['arrival_time']))
             if input_data['departure_time']:
                 self.te_time_dep.setTime(gen_funcs.str_to_time(input_data['departure_time']))
-            if input_data['dinner']:
+            if input_data['dinner'] is not None:
                 self.chb_dinner.setChecked(input_data['dinner'])
-            if input_data['remotely']:
-                self.chb_dinner.setChecked(input_data['remotely'])
+            if input_data['remotely'] is not None:
+                self.chb_remotely.setChecked(input_data['remotely'])
             if input_data['time_absence_begin']:
                 self.te_time_absense_start.setTime(gen_funcs.str_to_time(input_data['time_absence_begin']))
             if input_data['time_absence_end']:
