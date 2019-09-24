@@ -73,6 +73,7 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
         self.chb_remotely.setChecked(False)
         self.gb_additional_param.setChecked(False)
         self.cb_reason.setCurrentText("")
+        self.tb_time_presence.setText("")
 
     # Update data in fields, when date was changed
     def change_output_by_date(self):
@@ -141,8 +142,15 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
     # Update values in "output_fields" - right part of GUI
     def update_output_fields(self, cursor):
         selected_date = self.cal_calendar.selectedDate().toString("yyyy-MM-dd")
-        time_presence = stat.get_time_presence(cursor, selected_date)
+
+        # update day stat
+        time_presence, time_diff, flag_conversion = stat.get_day_info(cursor, selected_date)
         self.tb_time_presence.setText(str(time_presence))
+        self.tb_difference.setText(str(time_diff))
+        if flag_conversion:
+            self.tb_difference.setStyleSheet("background-color: green; font-size: 12pt;")
+        else:
+            self.tb_difference.setStyleSheet("background-color: red; font-size: 12pt;")
 
     # Creating a database connection
     @staticmethod
