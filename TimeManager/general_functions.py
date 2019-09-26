@@ -52,17 +52,15 @@ def add_q(string):
     return '\'' + string + '\''
 
 
-# Return difference time: end - start. If dinner return value--
-def diff_times(start, end, dinner=False):
+# Return difference time: end - start.
+def diff_times(start, end):
     if start > end:
         end, start = start, end
     diff_h = end.hour - start.hour
     diff_m = end.minute - start.minute
     if diff_m < 0:
         diff_h -= 1
-        diff_m = 60 + diff_m
-    if dinner:
-        diff_h -= 1
+        diff_m += 60
     diff_time = time(hour=diff_h, minute=diff_m)
     return diff_time
 
