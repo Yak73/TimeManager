@@ -6,9 +6,8 @@ from datetime import time
 #            'time_absence_begin', 'time_absence_end', 'comment', 'id_non_appearance_reason']
 
 
-def get_day_info(cursor, cur_date, record):
-    if not record:  # if haven`t data from database
-        record = from_db.get_input_data(cursor, cur_date)
+def get_day_info(cursor, cur_date):
+    record = from_db.get_input_data(cursor, cur_date)
 
     time_presence = get_time_presence(record)
     time_delta, flag_conversion = get_time_delta(time_presence, record['dinner'])

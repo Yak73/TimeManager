@@ -81,7 +81,6 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
 
     # Set data in fields GUI from database
     def update_fields(self, cursor, upd_init_f=True, upd_input_f=True, upd_output_f=True):
-        record = dict()
         try:
             # TODO: функция update_input должна возвращать результ запроса
             #  и передавать далее, чтобы не делать повторный запрос
@@ -89,9 +88,9 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
             if upd_init_f:
                 self.update_init_fields(cursor)
             if upd_input_f:
-                record = self.update_input_fields(cursor)
+                self.update_input_fields(cursor)
             if upd_output_f:
-                self.update_output_fields(cursor, record)
+                self.update_output_fields(cursor)
         except Exception as e:
             gen_funcs.show_error(e)
 
@@ -139,14 +138,13 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
                     self.cb_reason.setCurrentIndex(index)
                 except TypeError as e:
                     gen_funcs.show_error(e)
-        return input_data
 
     # Update values in "output_fields" - right part of GUI
-    def update_output_fields(self, cursor, record):
+    def update_output_fields(self, cursor):
         selected_date = self.cal_calendar.selectedDate().toString("yyyy-MM-dd")
 
         # update day stat
-        time_presence, time_diff, flag_conversion = stat.get_day_info(cursor, selected_date, record)
+        time_presence, time_diff, flag_conversion = stat.get_day_info(cursor, selected_date)
         self.tb_time_presence.setText(str(time_presence))
         self.tb_difference.setText(str(time_diff))
         if flag_conversion:
