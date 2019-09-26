@@ -7,18 +7,32 @@ from datetime import time, datetime, date, timedelta
 
 
 def get_stat_for_all_periods(cursor, cur_date):
-    # TODO: изменить переменные и вовзращаемое значение
-    a, b, c = get_stat_for_period(cursor, type_interval='d', date_interval=cur_date)
+    keys = ['d_time_presence', 'd_time_delta', 'd_flag_conversion',
+            'w_time_presence', 'w_time_delta', 'w_flag_conversion',
+            'w_production_percent', 'w_avg_arrival_time', 'w_avg_departure_time',
+            'm_time_presence', 'm_time_delta', 'm_flag_conversion']
+    stat_dict = {}
+
+    day_stat = get_stat_for_period(cursor, type_interval='d', date_interval=cur_date)
 
     week_interval = gen_funcs.boundaries_work_week(cur_date)
     week_interval_dates = tuple([gen_funcs.date_to_str(date_) for date_ in week_interval])
-    d, e, f, g = get_stat_for_period(cursor, type_interval='w', date_interval=week_interval_dates)
+    week_stat = get_stat_for_period(cursor, type_interval='w', date_interval=week_interval_dates)
 
     m_interval = gen_funcs.boundaries_work_month(cur_date)
     m_interval_dates = tuple([gen_funcs.date_to_str(date_) for date_ in m_interval])
-    y, u, i, o = get_stat_for_period(cursor, type_interval='w', date_interval=m_interval_dates)
+    month_stat = get_stat_for_period(cursor, type_interval='m', date_interval=m_interval_dates)
 
-    return c, g, o
+    for key, value in zip(keys[:3], day_stat):
+        stat_dict[key] = value
+
+    for key, value in zip(keys[3:9], week_stat):
+        stat_dict[key] = value
+
+    for key, value in zip(keys[9:], month_stat):
+        stat_dict[key] = value
+
+    return stat_dict
 
 
 def get_stat_for_period(cursor, type_interval, date_interval):
@@ -49,13 +63,19 @@ def get_stat_for_period(cursor, type_interval, date_interval):
             t = time(hour=duration_workday_int)
         sum_time_reg += (t.hour * 60 + t.minute) * 60 + t.second
 
-    time_presence = sum_time_presence_fact
+    time_presence = timedelta(seconds=sum_time_presence_fact)
     time_delta = sum_time_presence_fact - sum_time_reg
     flag_conversion = False if time_delta < 0 else True
-    # TODO: считать регламент всю недели, а не где есть строчки
-    production_percent = 100 * round(sum_time_presence_fact / sum_time_reg, 2)
+    time_delta = abs(timedelta(seconds=time_delta))
+    # TODO: сменить время присутствия (сумм)
 
-    return time_presence, time_delta, flag_conversion, production_percent
+    if type_interval == 'w':
+        # TODO: считать регламент всю недели, а не где есть строчки
+        production_percent = int(100 * round(sum_time_presence_fact / sum_time_reg, 2))
+        avg_arrival_time, avg_departure_time = from_db.get_avg_times(cursor, type_interval, date_interval)
+        return time_presence, time_delta, flag_conversion, production_percent, avg_arrival_time, avg_departure_time
+
+    return time_presence, time_delta, flag_conversion
 
 
 def get_time_presence(record):

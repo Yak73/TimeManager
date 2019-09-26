@@ -1,4 +1,4 @@
-
+from TimeManager import general_functions as gen_funcs
 
 # Get name of current user
 def get_cur_user(cursor, slice_flag=False):
@@ -38,6 +38,40 @@ def get_id_reason(cursor, name_reason):
     return id_reason
 
 
+def get_avg_times(cursor, type_interval, date_interval):
+    if type(date_interval) == str and type_interval == 'd':
+        return
+    elif type(date_interval) == tuple and len(date_interval) == 2 and (type_interval == 'w' or type_interval == 'm'):
+        date_begin = "\'{}\'".format(date_interval[0])
+        date_end = "\'{}\'".format(date_interval[1])
+    else:
+        raise Exception('Некорректные аргументы для функции get_input_data()')
+
+    row = ''
+    select_string = "cast(cast(avg(cast(CAST(arrival_time as datetime) as float)) as datetime) as time)," \
+                    "cast(cast(avg(cast(CAST(departure_time as datetime) as float)) as datetime) as time)"
+    try:
+        cursor.execute("""SELECT {select_str}
+                        FROM 
+                            TimeLog AS tl
+                        WHERE 
+                            tl.username = SUSER_SNAME() 
+                            AND tl.tracked_date BETWEEN {start_date} AND {end_date}
+                            AND tl.arrival_time IS NOT NULL
+                            AND tl.departure_time IS NOT NULL
+                        """.format(select_str=select_string, start_date=date_begin, end_date=date_end))
+
+        row = list(cursor.fetchone())
+    except Exception as e:
+        gen_funcs.show_error(e)
+    if len(row) != 2:
+        if len(row) == 1:
+            return row[0][:8], ''
+        return '', ''
+    else:
+        return row[0][:8], row[1][:8]
+
+
 def get_input_data(cursor, type_interval, date_interval):
     """
         @description Выпонляет запросы на извлечение данных из БД (Таблица TimeLog)
@@ -47,7 +81,6 @@ def get_input_data(cursor, type_interval, date_interval):
         @returns {list(dict)} Список словарей из БД. Один словарь - одна запись
     """
     list_input_data = []
-    input_data = dict()
 
     if type(date_interval) == str and type_interval == 'd':
         date_begin = "\'{}\'".format(date_interval)

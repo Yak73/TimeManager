@@ -143,17 +143,43 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
     def update_output_fields(self, cursor):
         selected_date = self.cal_calendar.selectedDate().toString("yyyy-MM-dd")
 
-        # update day stat
+        # update stats
+        stat_dict = stat.get_stat_for_all_periods(cursor, selected_date)
 
-        time_presence, time_diff, flag_conversion = stat.get_stat_for_all_periods(cursor, selected_date)
-        """
-        self.tb_time_presence.setText(str(time_presence))
-        self.tb_difference.setText(str(time_diff))
-        if flag_conversion:
+        # stat_dict = ['d_time_presence', 'd_time_delta', 'd_flag_conversion',
+        #             'w_time_presence', 'w_time_delta', 'w_flag_conversion',
+        #             'w_production_percent', 'w_avg_arrival_time', 'w_avg_departure_time',
+        #             'm_time_presence', 'm_time_delta', 'm_flag_conversion']
+
+        # view day stat
+        self.tb_time_presence.setText(str(stat_dict['d_time_presence']))
+        self.tb_difference.setText(str(stat_dict['d_time_delta']))
+        if stat_dict['d_flag_conversion']:
             self.tb_difference.setStyleSheet("background-color: green; font-size: 12pt;")
         else:
             self.tb_difference.setStyleSheet("background-color: red; font-size: 12pt;")
-        """
+
+        # view week stat
+        self.tb_time_presence_sum.setText(str(stat_dict['w_time_presence']))
+        self.tb_difference_sum_week.setText(str(stat_dict['w_time_delta']))
+        if stat_dict['w_flag_conversion']:
+            self.tb_difference_sum_week.setStyleSheet("background-color: green; font-size: 12pt;")
+        else:
+            self.tb_difference_sum_week.setStyleSheet("background-color: red; font-size: 12pt;")
+        self.lcd_production.display(str(stat_dict['w_production_percent']))
+        self.tb_time_arr_avg.setText(str(stat_dict['w_avg_arrival_time']))
+        self.tb_time_dep_avg.setText(str(stat_dict['w_avg_departure_time']))
+
+        # view month stat
+        self.tb_difference_sum_month.setText(str(stat_dict['m_time_delta']))
+        if stat_dict['m_flag_conversion']:
+            self.tb_difference_sum_month.setStyleSheet("background-color: green; font-size: 12pt;")
+        else:
+            self.tb_difference_sum_month.setStyleSheet("background-color: red; font-size: 12pt;")
+
+
+
+
 
 
 
