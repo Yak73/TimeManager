@@ -9,22 +9,35 @@ from datetime import time
 def get_day_info(cursor, cur_date, record):
     if not record:  # if haven`t data from database
         record = from_db.get_input_data(cursor, cur_date)
+
     time_presence = get_time_presence(record)
     time_delta, flag_conversion = get_time_delta(time_presence, record['dinner'])
+
     return time_presence, time_delta, flag_conversion
 
 
 def get_time_presence(record):
-    # TODO: добавить обработку временного отсутствия
-    time_presence = time()
+    time_absence_presence = time()
+    res_time_presence = time()
     if record:
         ar_time = gen_funcs.str_to_time(record['arrival_time'])
         if record['departure_time']:
-            end_time = gen_funcs.str_to_time(record['departure_time'])
+            dep_time = gen_funcs.str_to_time(record['departure_time'])
         else:
-            end_time = gen_funcs.get_cur_time()
-        time_presence = gen_funcs.diff_times(ar_time, end_time)
-    return time_presence
+            dep_time = gen_funcs.get_cur_time()
+        if record['time_absence_begin'] and record['time_absence_end']:
+            time_absence_begin = gen_funcs.str_to_time(record['time_absence_begin'])
+            time_absence_end = gen_funcs.str_to_time(record['time_absence_end'])
+            time_absence_presence = gen_funcs.diff_times(time_absence_begin, time_absence_end)
+
+        time_presence = gen_funcs.diff_times(ar_time, dep_time)
+
+        if time_absence_presence != time():
+            res_time_presence = gen_funcs.diff_times(time_absence_presence, time_presence)
+        else:
+            res_time_presence = time_presence
+
+    return res_time_presence
 
 
 def get_time_delta(time_presence, dinner):

@@ -33,6 +33,8 @@ def show_error(err, additional_text='', parent=None):
 
 # Convert str to time
 def str_to_time(strtime):
+    if not strtime:
+        return time()
     temp_time = [int(i) for i in strtime.split(':')]
     return time(*temp_time)
 
