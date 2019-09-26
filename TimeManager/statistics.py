@@ -23,6 +23,9 @@ def get_stat_for_all_periods(cursor, cur_date):
     m_interval_dates = tuple([gen_funcs.date_to_str(date_) for date_ in m_interval])
     month_stat = get_stat_for_period(cursor, type_interval='m', date_interval=m_interval_dates)
 
+    if not day_stat or not week_stat or not month_stat:
+        return
+
     for key, value in zip(keys[:3], day_stat):
         stat_dict[key] = value
 
@@ -41,6 +44,8 @@ def get_stat_for_period(cursor, type_interval, date_interval):
     duration_dinner_int = 1
 
     records = from_db.get_input_data(cursor, type_interval, date_interval)
+    if not records:
+        return
 
     # if day
     if type_interval == 'd':

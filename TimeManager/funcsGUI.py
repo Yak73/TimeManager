@@ -72,6 +72,18 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
         self.cb_reason.setCurrentText("")
         self.tb_time_presence.setText("")
 
+        self.tb_time_presence.setText('')
+        self.tb_difference.setText('')
+        self.tb_time_presence_sum.setText('')
+        self.tb_difference_sum_week.setText('')
+        self.lcd_production.display(str(0))
+        self.tb_time_arr_avg.setText('')
+        self.tb_time_dep_avg.setText('')
+        self.tb_difference_sum_month.setText('')
+        self.tb_difference_sum_week.setStyleSheet("background-color: white; font-size: 12pt;")
+        self.tb_difference.setStyleSheet("background-color: white; font-size: 12pt;")
+        self.tb_difference_sum_month.setStyleSheet("background-color: white; font-size: 12pt;")
+
     # Update data in fields, when date was changed
     def change_output_by_date(self):
         connect = gen_funcs.connect_to_database()
@@ -106,7 +118,9 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
             selected_date = self.cal_calendar.selectedDate().toString("yyyy-MM-dd")
             print(selected_date)
             print(gen_funcs.boundaries_work_month(selected_date))
-            input_data = from_db.get_input_data(cursor, type_interval='d', date_interval=selected_date)[0]
+            input_data = from_db.get_input_data(cursor, type_interval='d', date_interval=selected_date)
+            if type(input_data) == list and input_data:
+                input_data = input_data[0]
         except Exception as e:
             gen_funcs.show_error(e)
 
@@ -145,7 +159,8 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
 
         # update stats
         stat_dict = stat.get_stat_for_all_periods(cursor, selected_date)
-
+        if not stat_dict:
+            return
         # stat_dict = ['d_time_presence', 'd_time_delta', 'd_flag_conversion',
         #             'w_time_presence', 'w_time_delta', 'w_flag_conversion',
         #             'w_production_percent', 'w_avg_arrival_time', 'w_avg_departure_time',
