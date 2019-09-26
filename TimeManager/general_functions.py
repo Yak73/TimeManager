@@ -32,16 +32,16 @@ def show_error(err, additional_text='', parent=None):
 
 
 # Convert str to time
-def str_to_time(strtime):
-    if not strtime:
+def str_to_time(str_time):
+    if not str_time:
         return time()
-    temp_time = [int(i) for i in strtime.split(':')]
+    temp_time = [int(i) for i in str_time.split(':')]
     return time(*temp_time)
 
 
 # Change separator in string: - -> :
-def change_sep(strtime):
-    return strtime.replace('-', ':')
+def change_sep(str_time):
+    return str_time.replace('-', ':')
 
 
 # Get current time
@@ -52,6 +52,11 @@ def get_cur_time():
 # Add ' '
 def add_q(string):
     return '\'' + string + '\''
+
+
+# Convert datetime() to str
+def date_to_str(date_):
+    return date_.strftime("%Y-%m-%d")
 
 
 # Return difference time: end - start.

@@ -106,7 +106,7 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
             selected_date = self.cal_calendar.selectedDate().toString("yyyy-MM-dd")
             print(selected_date)
             print(gen_funcs.boundaries_work_month(selected_date))
-            input_data = from_db.get_input_data(cursor, selected_date)
+            input_data = from_db.get_input_data(cursor, type_interval='d', date_interval=selected_date)[0]
         except Exception as e:
             gen_funcs.show_error(e)
 
@@ -144,13 +144,16 @@ class TimeManagerApp(QtWidgets.QMainWindow, design.Ui_TimeManager):
         selected_date = self.cal_calendar.selectedDate().toString("yyyy-MM-dd")
 
         # update day stat
-        time_presence, time_diff, flag_conversion = stat.get_day_info(cursor, selected_date)
+
+        time_presence, time_diff, flag_conversion = stat.get_stat_for_all_periods(cursor, selected_date)
+        """
         self.tb_time_presence.setText(str(time_presence))
         self.tb_difference.setText(str(time_diff))
         if flag_conversion:
             self.tb_difference.setStyleSheet("background-color: green; font-size: 12pt;")
         else:
             self.tb_difference.setStyleSheet("background-color: red; font-size: 12pt;")
+        """
 
 
 
